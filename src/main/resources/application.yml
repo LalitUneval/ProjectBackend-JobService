@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: job-servi
+    name: job-service
   cache:
     redis:
       time-to-live: 600000
