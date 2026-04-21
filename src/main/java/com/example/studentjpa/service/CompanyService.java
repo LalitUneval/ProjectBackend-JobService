@@ -2,6 +2,10 @@ package com.example.studentjpa.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import com.example.studentjpa.dto.companydto.CompanyResponse;
@@ -32,7 +36,12 @@ public class CompanyService {
 	    );
 	}
 
-	
+    @Caching(evict = {
+            @CacheEvict(value = "company_all", allEntries = true),
+            @CacheEvict(value = "company_location", allEntries = true),
+            @CacheEvict(value = "company_name", allEntries = true),
+            @CacheEvict(value = "company_recruiter", allEntries = true)
+    })
 	public CompanyResponse createCompany(@Valid CreateCompanyRequest createCompanyDto) {
 		
 		if(companyRepository.existsByCompanyName(createCompanyDto.getCompanyName())) {
@@ -52,6 +61,7 @@ public class CompanyService {
 		
 	}
 
+    @Cacheable(value = "company_all", key = "'all'")
 	public List<CompanyResponse> getAllCompanies() {
 		// TODO Auto-generated method stub
 		List<Company> companies=companyRepository.findAll();
@@ -61,6 +71,7 @@ public class CompanyService {
 	            .toList();
 	}
 
+    @Cacheable(value = "company_id", key = "#companyId")
 	public CompanyResponse getCompany(Long companyId) {
 		// TODO Auto-generated method stub
 		Company company = companyRepository.findById(companyId)
@@ -69,6 +80,7 @@ public class CompanyService {
 	    return mapToResponse(company);
 	}
 
+    @Cacheable(value = "company_name", key = "#name")
 	public List<CompanyResponse> searchCompaniesByName(String name) {
 		// TODO Auto-generated method stub
 		List<Company> companies=companyRepository.findByCompanyNameContainingIgnoreCase(name);
@@ -80,6 +92,7 @@ public class CompanyService {
 		return response;
 	}
 
+    @Cacheable(value = "company_location", key = "#location")
 	public List<CompanyResponse> getCompaniesByLocation(String location) {
 		// TODO Auto-generated method stub
         List<Company> companies=companyRepository.findByLocation(location);
@@ -89,6 +102,15 @@ public class CompanyService {
 	            .toList();
 	}
 
+    @Caching(
+            put = { @CachePut(value = "company_id", key = "#companyId") },
+            evict = {
+                    @CacheEvict(value = "company_all", allEntries = true),
+                    @CacheEvict(value = "company_location", allEntries = true),
+                    @CacheEvict(value = "company_name", allEntries = true),
+                    @CacheEvict(value = "company_recruiter", allEntries = true)
+            }
+    )
 	public CompanyResponse updateCompany(Long companyId,UpdateCompanyRequest request) {
 		// TODO Auto-generated method stub
 		Company company = companyRepository.findById(companyId)
@@ -103,7 +125,14 @@ public class CompanyService {
 	    return mapToResponse(updatedCompany);
 	}
 
-	public void deleteCompany(Long companyId) {
+    @Caching(evict = {
+            @CacheEvict(value = "company_id", key = "#companyId"),
+            @CacheEvict(value = "company_all", allEntries = true),
+            @CacheEvict(value = "company_location", allEntries = true),
+            @CacheEvict(value = "company_name", allEntries = true),
+            @CacheEvict(value = "company_recruiter", allEntries = true)
+    })
+    public void deleteCompany(Long companyId) {
 		// TODO Auto-generated method stub
 		Company company = companyRepository.findById(companyId)
 				.orElseThrow(() -> new RuntimeException("Company not found with id: " + companyId));
@@ -111,6 +140,7 @@ public class CompanyService {
 		companyRepository.delete(company);
 	}
 
+    @Cacheable(value = "company_recruiter", key = "#recruiterId")
 	public List<CompanyResponse> getCompaniesByRecruiterId(Long recruiterId) {
 		// TODO Auto-generated method stub
 		List<Company> companies=companyRepository.findByCreatedBy(recruiterId);

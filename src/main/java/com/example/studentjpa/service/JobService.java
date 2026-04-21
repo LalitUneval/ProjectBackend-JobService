@@ -1,5 +1,9 @@
 package com.example.studentjpa.service;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +50,15 @@ public class JobService {
                 .companyName(job.getCompany().getCompanyName())
                 .build();
     }
-    
+
+    @Caching(evict = {
+            @CacheEvict(value = "job_company", key = "#companyId"),
+            @CacheEvict(value = "job_latest", allEntries = true),
+            @CacheEvict(value = "job_city", allEntries = true),
+            @CacheEvict(value = "job_type", allEntries = true),
+            @CacheEvict(value = "job_recruiter", allEntries = true),
+            @CacheEvict(value = "job_visa", allEntries = true)
+    })
 	public JobResponse createJob(Long companyId, @Valid CreateJobRequest request) {
 		
 		Company company = companyRepository.findById(companyId)
@@ -73,6 +85,7 @@ public class JobService {
 	    return mapToResponse(savedJob);
 	}
 
+    @Cacheable(value = "job_id", key = "#jobId")
 	public JobResponse getJob(Long jobId) {
 		Job job = jobRepository.findById(jobId)
 				.orElseThrow(() -> new RuntimeException("Company not found with id: " + jobId));
@@ -115,6 +128,7 @@ public class JobService {
 	 
 	}
 
+    @Cacheable(value = "job_company", key = "#companyId")
 	public List<JobResponse> getJobsByCompanyId(Long companyId) {
 		
 		 if (!companyRepository.existsById(companyId)) {
@@ -128,6 +142,7 @@ public class JobService {
 				.toList();
 	}
 
+    @Cacheable(value = "job_visa", key = "'visa'")
 	public List<JobResponse> getVisaSponsoredJobs() {
 		
 		List<Job> response = jobRepository.findByVisaSponsored(false);
@@ -136,7 +151,8 @@ public class JobService {
 				.toList();
 	}
 
-	public List<JobResponse> getJobsByCity(String city) {
+    @Cacheable(value = "job_city", key = "#city")
+    public List<JobResponse> getJobsByCity(String city) {
 		// TODO Auto-generated method stub
 		List<Job> response = jobRepository.findByCity(city);
 		return response.stream()
@@ -144,6 +160,7 @@ public class JobService {
 				.toList();
 	}
 
+    @Cacheable(value = "job_type", key = "#jobType")
 	public List<JobResponse> getJobsByType(JobType jobType) {
 		// TODO Auto-generated method stub
 		List<Job> response = jobRepository.findByJobType(jobType);
@@ -152,6 +169,7 @@ public class JobService {
 				.toList();
 	}
 
+    @Cacheable(value = "job_latest", key = "'latest'")
 	public List<JobResponse> getLatestJobs() {
 		// TODO Auto-generated method stub
 		List<Job> response = jobRepository.findTop10ByOrderByPostedAtDesc();
@@ -160,6 +178,16 @@ public class JobService {
 				.toList();
 	}
 
+    @Caching(
+            put = { @CachePut(value = "job_id", key = "#jobId") },
+            evict = {
+                    @CacheEvict(value = "job_company", allEntries = true),
+                    @CacheEvict(value = "job_latest", allEntries = true),
+                    @CacheEvict(value = "job_city", allEntries = true),
+                    @CacheEvict(value = "job_type", allEntries = true),
+                    @CacheEvict(value = "job_recruiter", allEntries = true)
+            }
+    )
 	public JobResponse updateJob(Long jobId, @Valid UpdateJobRequest request) {
 		// TODO Auto-generated method stub
 		Job job = jobRepository.findById(jobId)
@@ -176,6 +204,14 @@ public class JobService {
 		return mapToResponse(upadatedJob);
 	}
 
+    @Caching(evict = {
+            @CacheEvict(value = "job_id", key = "#jobId"),
+            @CacheEvict(value = "job_company", allEntries = true),
+            @CacheEvict(value = "job_latest", allEntries = true),
+            @CacheEvict(value = "job_city", allEntries = true),
+            @CacheEvict(value = "job_type", allEntries = true),
+            @CacheEvict(value = "job_recruiter", allEntries = true)
+    })
 	public void deleteJob(Long jobId) {
 		// TODO Auto-generated method stub
 
@@ -185,6 +221,7 @@ public class JobService {
 		jobRepository.delete(job);
 	}
 
+    @Cacheable(value = "job_recruiter", key = "#recruiterId")
 	public List<JobResponse> getJobsByRecruiterId(Long recruiterId) {
 		// TODO Auto-generated method stub
 		List<Job> jobs = jobRepository.findByCompany_CreatedBy(recruiterId);

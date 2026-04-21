@@ -3,6 +3,8 @@ package com.example.studentjpa.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.example.studentjpa.dto.savejobdto.SaveJobRequest;
@@ -40,7 +42,8 @@ public class SaveJobService {
                 .savedAt(savedJob.getSavedAt())
                 .build();
     }
-	
+
+    @CacheEvict(value = "job_saved", key = "#request.userId")
 	public SavedJobResponse saveJob(SaveJobRequest request) {
 		// TODO Auto-generated method stub
 		Job job = jobRepository.findById(request.getJobId())
@@ -62,9 +65,10 @@ public class SaveJobService {
 	    return mapToResponse(savedJob);
 	}
 
-	public List<SavedJobResponse> getUserSavedJobs(Long userId2) {
+    @Cacheable(value = "job_saved", key = "#userId")
+	public List<SavedJobResponse> getUserSavedJobs(Long userId) {
 		// TODO Auto-generated method stub
-		List<SavedJob> response = savedJobRepository.findByUserId(userId2);
+		List<SavedJob> response = savedJobRepository.findByUserId(userId);
 		
 		return response.stream()
 				.map(this::mapToResponse)
@@ -72,8 +76,9 @@ public class SaveJobService {
 	}
 	
 	//delete by savedJobId
+    @CacheEvict(value = "job_saved", key = "#userId")
 	@Transactional
-	public void unsaveJob(Long savedJobId, Long userId2) {
+	public void unsaveJob(Long savedJobId, Long userId) {
 		// TODO Auto-generated method stub
 		//this is for job is saved or not 
 		SavedJob job = savedJobRepository.findById(savedJobId)
@@ -82,14 +87,15 @@ public class SaveJobService {
 		savedJobRepository.deleteById(savedJobId);
 		
 	}
-	
+
+    @CacheEvict(value = "job_saved", key = "#userId")
 	@Transactional
-	public void unsaveJobByUserAndJob(Long userId2, Long jobId2) {
+	public void unsaveJobByUserAndJob(Long userId, Long jobId2) {
 		// TODO Auto-generated method stub
-		SavedJob job = savedJobRepository.findByUserIdAndJobId(userId2, jobId2)
+		SavedJob job = savedJobRepository.findByUserIdAndJobId(userId, jobId2)
 				.orElseThrow(() -> new RuntimeException("Job not found"));
 		
-		savedJobRepository.deleteByUserIdAndJobId(userId2,jobId2);
+		savedJobRepository.deleteByUserIdAndJobId(userId,jobId2);
 	}
 
 	public boolean isJobSaved(Long userId2, Long jobId2) {

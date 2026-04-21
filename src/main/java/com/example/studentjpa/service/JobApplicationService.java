@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.example.studentjpa.client.user.UserProfileClient;
@@ -61,7 +63,8 @@ public class JobApplicationService {
                 .appliedAt(savedApplication.getAppliedAt())
                 .build();
 	}
-	
+
+    @CacheEvict(value = "job_application_user", key = "#request.userId")
 	public JobApplicationResponse applyForJob(ApplyJobRequest request , String Token) {
 		// TODO Auto-generated method stub
 		Job job= jobRepository.findById(request.getJobId())
@@ -96,6 +99,7 @@ public class JobApplicationService {
 		return mapToResponse(jobApplication,userResponse);
 	}
 
+    @Cacheable(value = "job_application_user", key = "#userId")
 	public List<JobApplicationResponse> getUserApplications(Long userId,String Token) {
 		// TODO Auto-generated method stub
 		List<JobApplication> jobApplications= jobApplicationRepository.findByUserId(userId);
@@ -146,7 +150,8 @@ public class JobApplicationService {
 		ApplicationStatus appStatus = ApplicationStatus.valueOf(status.toUpperCase());
 		return jobApplicationRepository.countByUserIdAndStatus(userId, appStatus);
 	}
-	
+
+    @CacheEvict(value = "job_application_user", key = "#userId")
 	@Transactional
 	public void withdrawApplication(Long applicationId, Long userId) {
 		// TODO Auto-generated method stub
@@ -154,7 +159,8 @@ public class JobApplicationService {
 				.orElseThrow(() -> new RuntimeException("Job Application not found"));
 		jobApplicationRepository.delete(jobApplication);
 	}
-	
+
+    @Cacheable(value = "job_application_recruiter", key = "#recruiterId")
 	public List<JobApplicationResponse> getApplicationsByRecruiter(Long recruiterId, String token) {
 		
 		System.out.println("RecruiterId: " + recruiterId);
